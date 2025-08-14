@@ -61,7 +61,7 @@ def load_kpi_data(start_date, end_date):
     SELECT
         COUNT(DISTINCT tx_id) AS "Number of Successful Txns",
         COUNT(DISTINCT tx_from) AS "Number of Users",
-        ROUND(COUNT(DISTINCT tx_id)::NUMERIC / NULLIF(COUNT(DISTINCT tx_from),0), 2) AS "Avg Txn per User"
+        ROUND(COUNT(DISTINCT tx_id)::NUMERIC / NULLIF(COUNT(DISTINCT tx_from),0)) AS "Avg Txn per User"
     FROM axelar.core.fact_transactions
     WHERE tx_succeeded = 'TRUE'
       AND block_timestamp::date >= '{start_date}'
