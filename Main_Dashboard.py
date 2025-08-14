@@ -57,8 +57,8 @@ end_date = st.date_input("End Date", value=pd.to_datetime("2025-07-31"))
 # --------------------------------------------------------------------------------------------------------------------------------
 st.markdown(
     """
-    <div style="background-color:#e6fa36; padding:1px; border-radius:10px;">
-        <h2 style="color:#000000; text-align:center;">Overall Stats of Chains</h2>
+    <div style="background-color:#faa5fc; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Transactions and Users on Axelar</h2>
     </div>
     """,
     unsafe_allow_html=True
