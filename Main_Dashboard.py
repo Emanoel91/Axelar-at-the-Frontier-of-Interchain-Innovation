@@ -53,3 +53,38 @@ conn = snowflake.connector.connect(
 timeframe = st.selectbox("Select Time Frame", ["week", "month", "day"])
 start_date = st.date_input("Start Date", value=pd.to_datetime("2025-01-01"))
 end_date = st.date_input("End Date", value=pd.to_datetime("2025-07-31"))
+
+# --- Cached Query Function ---
+@st.cache_data(ttl=3600) 
+def load_kpi_data(start_date, end_date):
+    query = f"""
+    SELECT
+        COUNT(DISTINCT tx_id) AS "Number of Successful Txns",
+        COUNT(DISTINCT tx_from) AS "Number of Users",
+        ROUND(COUNT(DISTINCT tx_id)::NUMERIC / NULLIF(COUNT(DISTINCT tx_from),0), 2) AS "Avg Txn per User"
+    FROM axelar.core.fact_transactions
+    WHERE tx_succeeded = 'TRUE'
+      AND block_timestamp::date >= '{start_date}'
+      AND block_timestamp::date <= '{end_date}'
+    """
+    return pd.read_sql(query, conn)
+
+# --- Load Data ---
+df = load_kpi_data(start_date, end_date)
+
+# --- Display KPIs in one row ---
+col1, col2, col3 = st.columns(3)
+
+col1.metric(
+    label="Number of Successful Txns",
+    value=f"{df['Number of Successful Txns'][0]:,}"
+)
+col2.metric(
+    label="Number of Users",
+    value=f"{df['Number of Users'][0]:,}"
+)
+col3.metric(
+    label="Avg Txn per User",
+    value=df['Avg Txn per User'][0]
+)
+
