@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 
 # --- Page Config: Tab Title & Icon -------------------------------------------------------------------------------------
 st.set_page_config(
-    page_title="ATH Interchain Transfers Using Axelar ITS",
+    page_title="Axelar at the Frontier of Interchain Innovation",
     page_icon="https://pbs.twimg.com/profile_images/1869486848646537216/rs71wCQo_400x400.jpg",
     layout="wide"
 )
@@ -15,8 +15,8 @@ st.set_page_config(
 st.markdown(
     """
     <div style="display: flex; align-items: center; gap: 15px;">
-        <img src="https://img.cryptorank.io/coins/aethir1731483767528.png" alt="Aethir Logo" style="width:60px; height:60px;">
-        <h1 style="margin: 0;">ATH Interchain Transfers Using Axelar ITS</h1>
+        <img src="https://pbs.twimg.com/profile_images/1869486848646537216/rs71wCQo_400x400.jpg" alt="Axelar Logo" style="width:60px; height:60px;">
+        <h1 style="margin: 0;">Axelar at the Frontier of Interchain Innovation</h1>
     </div>
     """,
     unsafe_allow_html=True
@@ -35,31 +35,9 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- Info Box --------------------------------------------------------------------------------------------------------------
-st.markdown(
-    """
-    <div style="background-color: #d9fd51; padding: 10px; border-radius: 1px; border: 1px solid #000000;">
-        Aethir and Axelar have partnered to enhance the interoperability of Aethir's ATH token across multiple blockchains. 
-        Aethir, a decentralized cloud infrastructure provider focused on gaming and AI, has integrated Axelar as its official 
-        blockchain bridge platform to enable seamless cross-chain bridging of the ATH token between Ethereum mainnet and Arbitrum Layer-2 blockchain. 
-        Axelar’s Interchain Token Service (ITS) supports this by allowing Aethir to deploy ERC-20 tokens across over many blockchains while maintaining 
-        native token functionality. This partnership facilitates frictionless ATH token transfers for Aethir’s ecosystem, particularly for Checker Node 
-        and Aethir Edge rewards (Arbitrum-based) and staking or exchange activities (Ethereum-based). 
-        Axelar’s decentralized network, APIs, and development tools provide scalability and flexibility, enabling Aethir to potentially expand ATH to 
-        additional blockchains. 
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.info("📊Charts initially display data for a default time range. Select a custom range to view results for your desired period.")
 
-st.info(
-    "📊Charts initially display data for a default time range. Select a custom range to view results for your desired period."
-
-)
-
-st.info(
-    "⏳On-chain data retrieval may take a few moments. Please wait while the results load."
-)
+st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
 
 # --- Snowflake Connection --------------------------------------------------------------------------------------------------
 conn = snowflake.connector.connect(
@@ -72,6 +50,6 @@ conn = snowflake.connector.connect(
 )
 
 # --- Time Frame & Period Selection ---
-timeframe = st.selectbox("Select Time Frame", ["month", "week", "day"])
-start_date = st.date_input("Start Date", value=pd.to_datetime("2024-06-10"))
+timeframe = st.selectbox("Select Time Frame", ["week", "month", "day"])
+start_date = st.date_input("Start Date", value=pd.to_datetime("2025-01-01"))
 end_date = st.date_input("End Date", value=pd.to_datetime("2025-07-31"))
