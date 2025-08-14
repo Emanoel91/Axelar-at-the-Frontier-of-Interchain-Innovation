@@ -40,7 +40,7 @@ st.info("📊Charts initially display data for a default time range. Select a cu
 st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
 
 # --- Snowflake Connection --------------------------------------------------------------------------------------------------
-    conn = snowflake.connector.connect(
+conn = snowflake.connector.connect(
     user=st.secrets["snowflake"]["user"],
     password=st.secrets["snowflake"]["password"],
     account=st.secrets["snowflake"]["account"],
