@@ -131,3 +131,92 @@ fig_area = px.area(
 col1, col2 = st.columns(2)
 col1.plotly_chart(fig_bar, use_container_width=True)
 col2.plotly_chart(fig_area, use_container_width=True)
+
+# --- Row 3 ------------------------------------------------------------------------------------------------------------------------------
+# --- Cached Function for Donut Chart Data ---
+@st.cache_data(ttl=86400)
+def load_txn_status_totals(start_date, end_date):
+    query = f"""
+    SELECT 
+        CASE WHEN tx_succeeded = 'TRUE' THEN 'Succeeded' ELSE 'Failed' END AS "Status",
+        COUNT(DISTINCT tx_id) AS "Number of Txns"
+    FROM axelar.core.fact_transactions
+    WHERE block_timestamp::date >= '{start_date}'
+      AND block_timestamp::date <= '{end_date}'
+    GROUP BY 1
+    """
+    return pd.read_sql(query, conn)
+
+# --- Cached Function for Bar-Line Chart Data ---
+@st.cache_data(ttl=86400)
+def load_users_over_time(start_date, end_date, timeframe):
+    query = f"""
+    SELECT
+        date_trunc('{timeframe}', block_timestamp) AS "Date",
+        COUNT(DISTINCT tx_from) AS "Number of Users",
+        ROUND(COUNT(DISTINCT tx_id)::NUMERIC / NULLIF(COUNT(DISTINCT tx_from),0), 2) AS "Avg Txn per User"
+    FROM axelar.core.fact_transactions
+    WHERE tx_succeeded = 'TRUE'
+      AND block_timestamp::date >= '{start_date}'
+      AND block_timestamp::date <= '{end_date}'
+    GROUP BY 1
+    ORDER BY 1
+    """
+    return pd.read_sql(query, conn)
+
+# --- Load Data ---
+df_donut = load_txn_status_totals(start_date, end_date)
+df_users = load_users_over_time(start_date, end_date, timeframe)
+
+# --- Donut Chart ---
+fig_donut = px.pie(
+    df_donut,
+    names="Status",
+    values="Number of Txns",
+    hole=0.5,
+    title="Total Number of Transactions by Status"
+)
+
+# --- Bar-Line Chart ---
+import plotly.graph_objects as go
+
+fig_barline = go.Figure()
+
+# Bar for Number of Users (left y-axis)
+fig_barline.add_trace(go.Bar(
+    x=df_users["Date"],
+    y=df_users["Number of Users"],
+    name="Number of Users",
+    yaxis="y1"
+))
+
+# Line for Avg Txn per User (right y-axis)
+fig_barline.add_trace(go.Scatter(
+    x=df_users["Date"],
+    y=df_users["Avg Txn per User"],
+    name="Avg Txn per User",
+    yaxis="y2",
+    mode="lines+markers"
+))
+
+# Layout
+fig_barline.update_layout(
+    title="Axelar Users Over Time",
+    xaxis=dict(title="Date"),
+    yaxis=dict(
+        title="Number of Users",
+        side="left"
+    ),
+    yaxis2=dict(
+        title="Avg Txn per User",
+        overlaying="y",
+        side="right"
+    ),
+    legend=dict(x=0.5, y=1.1, orientation="h")
+)
+
+# --- Display Side-by-Side ---
+col1, col2 = st.columns(2)
+col1.plotly_chart(fig_donut, use_container_width=True)
+col2.plotly_chart(fig_barline, use_container_width=True)
+
