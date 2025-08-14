@@ -54,8 +54,8 @@ timeframe = st.selectbox("Select Time Frame", ["week", "month", "day"])
 start_date = st.date_input("Start Date", value=pd.to_datetime("2025-01-01"))
 end_date = st.date_input("End Date", value=pd.to_datetime("2025-07-31"))
 
-# --- Cached Query Function ---
-@st.cache_data(ttl=3600) 
+# --- Row 1 -----------------------------------------------------------------------------------------------------------------------
+@st.cache_data(ttl=86400) 
 def load_kpi_data(start_date, end_date):
     query = f"""
     SELECT
@@ -88,3 +88,46 @@ col3.metric(
     value=df['Avg Txn per User'][0]
 )
 
+# --- Row 2 --------------------------------------------------------------------------------------------------------------------------------
+# --- Cached Function for Chart Data ---
+@st.cache_data(ttl=600)
+def load_txn_status_data(start_date, end_date, timeframe):
+    query = f"""
+    SELECT 
+        date_trunc('{timeframe}', block_timestamp) AS "Date",
+        COUNT(DISTINCT tx_id) AS "Number of Txns",
+        CASE WHEN tx_succeeded = 'TRUE' THEN 'Succeeded' ELSE 'Failed' END AS "Status"
+    FROM axelar.core.fact_transactions
+    WHERE block_timestamp::date >= '{start_date}'
+      AND block_timestamp::date <= '{end_date}'
+    GROUP BY 1, 3
+    ORDER BY 1
+    """
+    return pd.read_sql(query, conn)
+
+# --- Load Data ---
+df_chart = load_txn_status_data(start_date, end_date, timeframe)
+
+# --- Create Plots ---
+fig_bar = px.bar(
+    df_chart,
+    x="Date",
+    y="Number of Txns",
+    color="Status",
+    title="Successful and Failed Transaction Over Time",
+    barmode="stack"
+)
+
+fig_area = px.area(
+    df_chart,
+    x="Date",
+    y="Number of Txns",
+    color="Status",
+    groupnorm="fraction",  # Normalized stacked area
+    title="% of Successful and Failed Transactions Over Time"
+)
+
+# --- Display Side-by-Side Charts ---
+col1, col2 = st.columns(2)
+col1.plotly_chart(fig_bar, use_container_width=True)
+col2.plotly_chart(fig_area, use_container_width=True)
