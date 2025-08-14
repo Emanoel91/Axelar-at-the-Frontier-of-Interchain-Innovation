@@ -54,6 +54,15 @@ timeframe = st.selectbox("Select Time Frame", ["week", "month", "day"])
 start_date = st.date_input("Start Date", value=pd.to_datetime("2025-01-01"))
 end_date = st.date_input("End Date", value=pd.to_datetime("2025-07-31"))
 
+# --------------------------------------------------------------------------------------------------------------------------------
+st.markdown(
+    """
+    <div style="background-color:#e6fa36; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Overall Stats of Chains</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 # --- Row 1 -----------------------------------------------------------------------------------------------------------------------
 @st.cache_data(ttl=86400) 
 def load_kpi_data(start_date, end_date):
