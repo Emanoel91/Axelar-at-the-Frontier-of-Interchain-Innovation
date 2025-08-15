@@ -1,4 +1,4 @@
 streamlit
-snowflake-connector-python
+snowflake-connector-python>=3.0.3
 pandas
 plotly
