@@ -39,11 +39,11 @@ st.info("📊Charts initially display data for a default time range. Select a cu
 
 st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
 
-# --- Snowflake Connection --------------------------------------------------------------------------------------------------
+# --- Snowflake Connection with PAT -----------------------------------------------------------------------------------------------------
 conn = snowflake.connector.connect(
-    account=st.secrets["snowflake"]["account"],       # مثل قبل
-    authenticator="oauth",                            # مشخص می‌کنیم که با OAuth/PAT وصل می‌شیم
-    token=st.secrets["snowflake"]["token"],           # اینجا PAT رو می‌ذاریم
+    account=st.secrets["snowflake"]["account"],
+    authenticator="oauth",
+    token=st.secrets["snowflake"]["token"],
     warehouse="SNOWFLAKE_LEARNING_WH",
     database="AXELAR",
     schema="PUBLIC"
