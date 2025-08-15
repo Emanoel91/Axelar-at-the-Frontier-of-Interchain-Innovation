@@ -41,9 +41,9 @@ st.info("⏳On-chain data retrieval may take a few moments. Please wait while th
 
 # --- Snowflake Connection --------------------------------------------------------------------------------------------------
 conn = snowflake.connector.connect(
-    user=st.secrets["snowflake"]["user"],
-    password=st.secrets["snowflake"]["password"],
-    account=st.secrets["snowflake"]["account"],
+    account=st.secrets["snowflake"]["account"],       # مثل قبل
+    authenticator="oauth",                            # مشخص می‌کنیم که با OAuth/PAT وصل می‌شیم
+    token=st.secrets["snowflake"]["token"],           # اینجا PAT رو می‌ذاریم
     warehouse="SNOWFLAKE_LEARNING_WH",
     database="AXELAR",
     schema="PUBLIC"
