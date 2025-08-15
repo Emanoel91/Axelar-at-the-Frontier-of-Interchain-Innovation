@@ -39,21 +39,37 @@ st.info("📊Charts initially display data for a default time range. Select a cu
 
 st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
 
-# --- Snowflake Connection using Key Pair ---
-conn = snowflake.connector.connect(
-    user=st.secrets["snowflake"]["user"],
-    account=st.secrets["snowflake"]["account"],
-    private_key=private_key,
-    warehouse="SNOWFLAKE_LEARNING_WH",
-    database="AXELAR",
-    schema="PUBLIC"
-)
+# --- Snowflake Connection using PAT ------------------------------------------
+st.info("⏳ On-chain data retrieval may take a few moments. Please wait...")
 
-# --- Example query ---
-cur = conn.cursor()
-cur.execute("SELECT CURRENT_TIMESTAMP;")
-result = cur.fetchone()
-st.write("Current Snowflake timestamp:", result[0])
+try:
+    conn = snowflake.connector.connect(
+        user=st.secrets["snowflake"]["user"],       # نام کاربری Snowflake
+        account=st.secrets["snowflake"]["account"], # اکانت Snowflake
+        token=st.secrets["snowflake"]["token"],     # Programmatic Access Token
+        authenticator="oauth",                      # ⚠ ضروری برای PAT
+        warehouse="SNOWFLAKE_LEARNING_WH",
+        database="AXELAR",
+        schema="PUBLIC"
+    )
+    st.success("✅ Connected to Snowflake successfully!")
 
-cur.close()
-conn.close()
+    # --- Example query ---
+    cur = conn.cursor()
+    cur.execute("SELECT CURRENT_TIMESTAMP;")
+    result = cur.fetchone()
+    st.write("Current Snowflake timestamp:", result[0])
+
+    # --- Example chart query ---
+    cur.execute("SELECT COLUMN1, COLUMN2 FROM MY_TABLE LIMIT 10;")
+    data = cur.fetchall()
+    if data:
+        import pandas as pd
+        df = pd.DataFrame(data, columns=["COLUMN1", "COLUMN2"])
+        st.line_chart(df.set_index("COLUMN1"))
+
+    cur.close()
+    conn.close()
+
+except snowflake.connector.errors.ProgrammingError as e:
+    st.error(f"Snowflake connection failed: {e}")
