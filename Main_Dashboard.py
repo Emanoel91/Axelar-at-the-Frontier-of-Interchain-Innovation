@@ -42,12 +42,14 @@ st.info("⏳On-chain data retrieval may take a few moments. Please wait while th
 # --- Snowflake Connection with PAT -----------------------------------------------------------------------------------------------------
 conn = snowflake.connector.connect(
     account=st.secrets["snowflake"]["account"],
+    user=st.secrets["snowflake"]["user"],      # باید ست بشه
     authenticator="oauth",
     token=st.secrets["snowflake"]["token"],
     warehouse="SNOWFLAKE_LEARNING_WH",
     database="AXELAR",
     schema="PUBLIC"
 )
+
 
 # --- Time Frame & Period Selection ---
 timeframe = st.selectbox("Select Time Frame", ["week", "month", "day"])
