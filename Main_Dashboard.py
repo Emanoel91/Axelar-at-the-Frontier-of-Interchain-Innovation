@@ -35,14 +35,12 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.info("📊Charts initially display data for a default time range. Select a custom range to view results for your desired period.")
+st.info("📊 Charts initially display data for a default time range. Select a custom range to view results for your desired period.")
+st.info("⏳ On-chain data retrieval may take a few moments. Please wait while the results load.")
 
-st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
-
-# --- Snowflake Connection using PAT ------------------------------------------
-
-   conn = snowflake.connector.connect(**st.secrets["connections"]["Axelar_dashboards"])
-    
+# --- Snowflake Connection with SSO (externalbrowser) ------------------------------------------
+try:
+    conn = snowflake.connector.connect(**st.secrets["connections"]["Axelar_dashboards"])
     st.success("✅ Connected to Snowflake successfully!")
 
     # --- Example query ---
@@ -55,7 +53,6 @@ st.info("⏳On-chain data retrieval may take a few moments. Please wait while th
     cur.execute("SELECT COLUMN1, COLUMN2 FROM MY_TABLE LIMIT 10;")
     data = cur.fetchall()
     if data:
-        import pandas as pd
         df = pd.DataFrame(data, columns=["COLUMN1", "COLUMN2"])
         st.line_chart(df.set_index("COLUMN1"))
 
@@ -63,4 +60,4 @@ st.info("⏳On-chain data retrieval may take a few moments. Please wait while th
     conn.close()
 
 except snowflake.connector.errors.ProgrammingError as e:
-    st.error(f"Snowflake connection failed: {e}")
+    st.error(f"❌ Snowflake connection failed: {e}")
