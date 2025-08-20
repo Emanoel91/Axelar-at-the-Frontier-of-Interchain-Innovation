@@ -41,15 +41,7 @@ st.info("⏳On-chain data retrieval may take a few moments. Please wait while th
 
 # --- Snowflake Connection using PAT ------------------------------------------
 
-    conn = snowflake.connector.connect(
-    account="EVMWWMU-CBC67994",
-    user="EMAN_AXELAR",
-    authenticator="externalbrowser",  
-    role="SYSADMIN"
-    warehouse = "SNOWFLAKE_LEARNING_WH"        
-    database = "AXELAR"         
-    schema = "PUBLIC"           
-    )
+   conn = snowflake.connector.connect(**st.secrets["connections"]["Axelar_dashboards"])
     
     st.success("✅ Connected to Snowflake successfully!")
 
