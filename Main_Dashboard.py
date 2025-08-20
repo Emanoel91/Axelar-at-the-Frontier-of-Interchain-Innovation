@@ -2,62 +2,46 @@ import streamlit as st
 import pandas as pd
 import snowflake.connector
 import plotly.express as px
-import plotly.graph_objects as go
 
-# --- Page Config: Tab Title & Icon -------------------------------------------------------------------------------------
+# --- Page Config ---
 st.set_page_config(
-    page_title="Axelar at the Frontier of Interchain Innovation",
-    page_icon="https://pbs.twimg.com/profile_images/1869486848646537216/rs71wCQo_400x400.jpg",
+    page_title="Axelar Dashboard",
+    page_icon="📊",
     layout="wide"
 )
 
-# --- Title with Logo ---------------------------------------------------------------------------------------------------
-st.markdown(
-    """
-    <div style="display: flex; align-items: center; gap: 15px;">
-        <img src="https://pbs.twimg.com/profile_images/1869486848646537216/rs71wCQo_400x400.jpg" alt="Axelar Logo" style="width:60px; height:60px;">
-        <h1 style="margin: 0;">Axelar at the Frontier of Interchain Innovation</h1>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.title("Axelar at the Frontier of Interchain Innovation")
 
-# --- Builder Info ---------------------------------------------------------------------------------------------------------
-st.markdown(
-    """
-    <div style="margin-top: 20px; margin-bottom: 20px; font-size: 16px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="https://pbs.twimg.com/profile_images/1841479747332608000/bindDGZQ_400x400.jpg" style="width:25px; height:25px; border-radius: 50%;">
-            <span>Built by: <a href="https://x.com/0xeman_raz" target="_blank">Eman Raz</a></span>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.info("📊 Data is retrieved from Snowflake. Users do not need Snowflake credentials.")
 
-st.info("📊 Charts initially display data for a default time range. Select a custom range to view results for your desired period.")
-st.info("⏳ On-chain data retrieval may take a few moments. Please wait while the results load.")
-
-# --- Snowflake Connection with SSO (externalbrowser) ------------------------------------------
-try:
-    conn = snowflake.connector.connect(**st.secrets["connections"]["Axelar_dashboards"])
-    st.success("✅ Connected to Snowflake successfully!")
-
-    # --- Example query ---
-    cur = conn.cursor()
-    cur.execute("SELECT CURRENT_TIMESTAMP;")
-    result = cur.fetchone()
-    st.write("Current Snowflake timestamp:", result[0])
-
-    # --- Example chart query ---
-    cur.execute("SELECT COLUMN1, COLUMN2 FROM MY_TABLE LIMIT 10;")
-    data = cur.fetchall()
-    if data:
+# --- Connect to Snowflake ---
+@st.cache_data(ttl=300)  # cache data for 5 minutes
+def load_data():
+    try:
+        # اتصال با حساب تو (SSO)
+        conn = snowflake.connector.connect(
+            **st.secrets["connections"]["Axelar_dashboards"]
+        )
+        cur = conn.cursor()
+        
+        # مثال: گرفتن داده از جدول نمونه
+        cur.execute("SELECT COLUMN1, COLUMN2 FROM MY_TABLE LIMIT 100;")
+        data = cur.fetchall()
         df = pd.DataFrame(data, columns=["COLUMN1", "COLUMN2"])
-        st.line_chart(df.set_index("COLUMN1"))
+        
+        cur.close()
+        conn.close()
+        return df
+    except Exception as e:
+        st.error(f"Snowflake connection failed: {e}")
+        return pd.DataFrame()
 
-    cur.close()
-    conn.close()
+# --- Load Data ---
+df = load_data()
 
-except snowflake.connector.errors.ProgrammingError as e:
-    st.error(f"❌ Snowflake connection failed: {e}")
+if not df.empty:
+    st.subheader("Example Chart")
+    fig = px.line(df, x="COLUMN1", y="COLUMN2", title="COLUMN1 vs COLUMN2")
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("No data to display.")
