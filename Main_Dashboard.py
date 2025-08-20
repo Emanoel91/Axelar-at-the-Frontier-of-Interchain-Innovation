@@ -40,18 +40,17 @@ st.info("📊Charts initially display data for a default time range. Select a cu
 st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
 
 # --- Snowflake Connection using PAT ------------------------------------------
-st.info("⏳ On-chain data retrieval may take a few moments. Please wait...")
 
-try:
     conn = snowflake.connector.connect(
-        user=st.secrets["snowflake"]["user"],       # نام کاربری Snowflake
-        account=st.secrets["snowflake"]["account"], # اکانت Snowflake
-        token=st.secrets["snowflake"]["token"],     # Programmatic Access Token
-        authenticator="oauth",                      # ⚠ ضروری برای PAT
-        warehouse="SNOWFLAKE_LEARNING_WH",
-        database="AXELAR",
-        schema="PUBLIC"
+    account="EVMWWMU-CBC67994",
+    user="EMAN_AXELAR",
+    authenticator="externalbrowser",  
+    role="SYSADMIN"
+    warehouse = "SNOWFLAKE_LEARNING_WH"        
+    database = "AXELAR"         
+    schema = "PUBLIC"           
     )
+    
     st.success("✅ Connected to Snowflake successfully!")
 
     # --- Example query ---
