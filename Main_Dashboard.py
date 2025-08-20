@@ -14,7 +14,7 @@ st.title("Axelar at the Frontier of Interchain Innovation")
 st.info("📊 Data is retrieved from Snowflake. Users do not need Snowflake credentials.")
 
 # --- Connect to Snowflake and cache data ---
-@st.cache_data(ttl=300)  # cache data for 5 minutes
+@st.cache_data(ttl=300)  # کش داده‌ها برای 5 دقیقه
 def load_data():
     try:
         conn = snowflake.connector.connect(
