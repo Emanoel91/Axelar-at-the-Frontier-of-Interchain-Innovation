@@ -11,14 +11,12 @@ st.set_page_config(
 )
 
 st.title("Axelar at the Frontier of Interchain Innovation")
-
 st.info("📊 Data is retrieved from Snowflake. Users do not need Snowflake credentials.")
 
-# --- Connect to Snowflake ---
+# --- Connect to Snowflake and cache data ---
 @st.cache_data(ttl=300)  # cache data for 5 minutes
 def load_data():
     try:
-        # اتصال با حساب تو (SSO)
         conn = snowflake.connector.connect(
             **st.secrets["connections"]["Axelar_dashboards"]
         )
