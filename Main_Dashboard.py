@@ -2,45 +2,230 @@ import streamlit as st
 import pandas as pd
 import snowflake.connector
 import plotly.express as px
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
-# --- Page Config ---
+# --- Page Config ------------------------------------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Axelar Dashboard",
-    page_icon="📊",
+    page_title="Axelar's Squid Bridge",
+    page_icon="https://pbs.twimg.com/profile_images/1938625911743524864/ppNPPF84_400x400.jpg",
     layout="wide"
 )
 
-st.title("Axelar at the Frontier of Interchain Innovation")
-st.info("📊 Data is retrieved from Snowflake. Users do not need Snowflake credentials.")
+# --- Title with Logo -----------------------------------------------------------------------------------------------------
+st.title("📜Overall Stats")
 
-# --- Connect to Snowflake and cache data ---
-@st.cache_data(ttl=300)
-def load_data():
-    try:
-        # اتصال با key-pair از secrets
-        conn = snowflake.connector.connect(
-            **st.secrets["connections"]["Axelar_dashboards"]
-        )
-        cur = conn.cursor()
+st.info("📊Charts initially display data for a default time range. Select a custom range to view results for your desired period.")
+st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
 
-        # مثال: گرفتن داده از جدول نمونه
-        cur.execute("SELECT COLUMN1, COLUMN2 FROM MY_TABLE LIMIT 100;")
-        data = cur.fetchall()
-        df = pd.DataFrame(data, columns=["COLUMN1", "COLUMN2"])
+# --- Sidebar Footer Slightly Left-Aligned ---------------------------------------------------------------------------------------------------------
+st.sidebar.markdown(
+    """
+    <style>
+    .sidebar-footer {
+        position: fixed;
+        bottom: 20px;
+        width: 250px;
+        font-size: 13px;
+        color: gray;
+        margin-left: 5px; 
+        text-align: left;  
+    }
+    .sidebar-footer img {
+        width: 16px;
+        height: 16px;
+        vertical-align: middle;
+        border-radius: 50%;
+        margin-right: 5px;
+    }
+    .sidebar-footer a {
+        color: gray;
+        text-decoration: none;
+    }
+    </style>
 
-        cur.close()
-        conn.close()
-        return df
-    except Exception as e:
-        st.error(f"❌ Snowflake connection failed: {e}")
-        return pd.DataFrame()
+    <div class="sidebar-footer">
+        <div>
+            <a href="https://x.com/axelar" target="_blank">
+                <img src="https://img.cryptorank.io/coins/axelar1663924228506.png" alt="Axelar Logo">
+                Powered by Axelar
+            </a>
+        </div>
+        <div style="margin-top: 5px;">
+            <a href="https://x.com/0xeman_raz" target="_blank">
+                <img src="https://pbs.twimg.com/profile_images/1841479747332608000/bindDGZQ_400x400.jpg" alt="Eman Raz">
+                Built by Eman Raz
+            </a>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-# --- Load Data ---
-df = load_data()
+# --- Snowflake Connection with Key Pair -------------------------------------------------------------------------
+private_key_str = st.secrets["snowflake"]["private_key"]  # متن کلید PEM بدون BEGIN/END
+private_key_bytes = private_key_str.encode("utf-8")
 
-if not df.empty:
-    st.subheader("Example Chart")
-    fig = px.line(df, x="COLUMN1", y="COLUMN2", title="COLUMN1 vs COLUMN2")
-    st.plotly_chart(fig, use_container_width=True)
-else:
-    st.warning("No data to display.")
+private_key = serialization.load_pem_private_key(
+    private_key_bytes,
+    password=None,  # اگر کلید شما رمز دارد، رمز را وارد کنید: password=b"YOUR_PASSWORD"
+    backend=default_backend()
+)
+
+conn = snowflake.connector.connect(
+    user=st.secrets["snowflake"]["user"],
+    account=st.secrets["snowflake"]["account"],
+    private_key=private_key,
+    warehouse="SNOWFLAKE_LEARNING_WH",
+    database="AXELAR",
+    schema="PUBLIC"
+)
+
+# --- Date Inputs ---------------------------------------------------------------------------------------------------
+timeframe = st.selectbox("Select Time Frame", ["month", "week", "day"])
+start_date = st.date_input("Start Date", value=pd.to_datetime("2023-01-01"))
+end_date = st.date_input("End Date", value=pd.to_datetime("2025-07-31"))
+
+# --- Query Function: Row1 --------------------------------------------------------------------------------------
+@st.cache_data
+def load_kpi_data(timeframe, start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    WITH axelar_service AS (
+        -- Token Transfers
+        SELECT 
+            created_at, 
+            LOWER(data:send:original_source_chain) AS source_chain, 
+            LOWER(data:send:original_destination_chain) AS destination_chain,
+            recipient_address AS user, 
+            CASE 
+              WHEN IS_ARRAY(data:send:amount) THEN NULL
+              WHEN IS_OBJECT(data:send:amount) THEN NULL
+              WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:amount::STRING)
+              ELSE NULL
+            END AS amount,
+            CASE 
+              WHEN IS_ARRAY(data:send:amount) OR IS_ARRAY(data:link:price) THEN NULL
+              WHEN IS_OBJECT(data:send:amount) OR IS_OBJECT(data:link:price) THEN NULL
+              WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL AND TRY_TO_DOUBLE(data:link:price::STRING) IS NOT NULL 
+                THEN TRY_TO_DOUBLE(data:send:amount::STRING) * TRY_TO_DOUBLE(data:link:price::STRING)
+              ELSE NULL
+            END AS amount_usd,
+            CASE 
+              WHEN IS_ARRAY(data:send:fee_value) THEN NULL
+              WHEN IS_OBJECT(data:send:fee_value) THEN NULL
+              WHEN TRY_TO_DOUBLE(data:send:fee_value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:fee_value::STRING)
+              ELSE NULL
+            END AS fee,
+            id, 
+            'Token Transfers' AS Service, 
+            data:link:asset::STRING AS raw_asset
+        FROM axelar.axelscan.fact_transfers
+        WHERE status = 'executed'
+          AND simplified_status = 'received'
+          AND (
+            sender_address ilike '%0xce16F69375520ab01377ce7B88f5BA8C48F8D666%' 
+            OR sender_address ilike '%0x492751eC3c57141deb205eC2da8bFcb410738630%'
+            OR sender_address ilike '%0xDC3D8e1Abe590BCa428a8a2FC4CfDbD1AcF57Bd9%'
+            OR sender_address ilike '%0xdf4fFDa22270c12d0b5b3788F1669D709476111E%'
+            OR sender_address ilike '%0xe6B3949F9bBF168f4E3EFc82bc8FD849868CC6d8%'
+          )
+
+        UNION ALL
+
+        -- GMP
+        SELECT  
+            created_at,
+            data:call.chain::STRING AS source_chain,
+            data:call.returnValues.destinationChain::STRING AS destination_chain,
+            data:call.transaction.from::STRING AS user,
+            CASE 
+              WHEN IS_ARRAY(data:amount) OR IS_OBJECT(data:amount) THEN NULL
+              WHEN TRY_TO_DOUBLE(data:amount::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:amount::STRING)
+              ELSE NULL
+            END AS amount,
+            CASE 
+              WHEN IS_ARRAY(data:value) OR IS_OBJECT(data:value) THEN NULL
+              WHEN TRY_TO_DOUBLE(data:value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:value::STRING)
+              ELSE NULL
+            END AS amount_usd,
+            COALESCE(
+              CASE 
+                WHEN IS_ARRAY(data:gas:gas_used_amount) OR IS_OBJECT(data:gas:gas_used_amount) 
+                  OR IS_ARRAY(data:gas_price_rate:source_token.token_price.usd) OR IS_OBJECT(data:gas_price_rate:source_token.token_price.usd) 
+                THEN NULL
+                WHEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) IS NOT NULL 
+                  AND TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING) IS NOT NULL 
+                THEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) * TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING)
+                ELSE NULL
+              END,
+              CASE 
+                WHEN IS_ARRAY(data:fees:express_fee_usd) OR IS_OBJECT(data:fees:express_fee_usd) THEN NULL
+                WHEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING)
+                ELSE NULL
+              END
+            ) AS fee,
+            id, 
+            'GMP' AS Service, 
+            data:symbol::STRING AS raw_asset
+        FROM axelar.axelscan.fact_gmp 
+        WHERE status = 'executed'
+          AND simplified_status = 'received'
+          AND (
+            data:approved:returnValues:contractAddress ilike '%0xce16F69375520ab01377ce7B88f5BA8C48F8D666%' 
+            OR data:approved:returnValues:contractAddress ilike '%0x492751eC3c57141deb205eC2da8bFcb410738630%'
+            OR data:approved:returnValues:contractAddress ilike '%0xDC3D8e1Abe590BCa428a8a2FC4CfDbD1AcF57Bd9%'
+            OR data:approved:returnValues:contractAddress ilike '%0xdf4fFDa22270c12d0b5b3788F1669D709476111E%'
+            OR data:approved:returnValues:contractAddress ilike '%0xe6B3949F9bBF168f4E3EFc82bc8FD849868CC6d8%'
+          )
+    )
+    SELECT 
+        COUNT(DISTINCT id) AS Number_of_Transfers, 
+        COUNT(DISTINCT user) AS Number_of_Users, 
+        ROUND(SUM(amount_usd)) AS Volume_of_Transfers,
+        ROUND(avg(amount_usd)) as AVG_BRIDGES_VOLUME
+    FROM axelar_service
+    WHERE created_at::date >= '{start_str}' 
+      AND created_at::date <= '{end_str}'
+    """
+
+    df = pd.read_sql(query, conn)
+    return df
+
+# --- Load Data ----------------------------------------------------------------------------------------------------
+df_kpi = load_kpi_data(timeframe, start_date, end_date)
+
+# --- KPI Row ------------------------------------------------------------------------------------------------------
+col1, col2, col3, col4 = st.columns(4)
+
+def format_value(value, unit):
+    if unit == 'B':
+        return f"${value / 1_000_000_000:.2f}B"
+    elif unit == 'M':
+        return f"{value / 1_000_000:.2f}M Txns"
+    elif unit == 'K':
+        return f"{value / 1_000:.2f}K"
+    return str(value)
+
+col1.metric(
+    label="Bridged Volume",
+    value=format_value(df_kpi['VOLUME_OF_TRANSFERS'][0], 'B')
+)
+
+col2.metric(
+    label="Bridges",
+    value=format_value(df_kpi['NUMBER_OF_TRANSFERS'][0], 'M')
+)
+
+col3.metric(
+    label="Bridgors",
+    value=f"{df_kpi['NUMBER_OF_USERS'][0] / 1_000:.2f}K Addresses"
+)
+
+col4.metric(
+    label="Avg Bridge Volume",
+    value=f"${df_kpi['AVG_BRIDGES_VOLUME'][0] / 1_000:.2f}K"
+)
