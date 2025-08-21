@@ -66,7 +66,7 @@ st.sidebar.markdown(
 private_key_str = st.secrets["snowflake"]["private_key"]  # متن کلید PEM بدون BEGIN/END
 private_key_bytes = private_key_str.encode("utf-8")
 
-private_key = serialization.load_pem_private_key(
+private_key = serialization.load_pem_private_key( 
     private_key_bytes,
     password=None,  # اگر کلید شما رمز دارد، رمز را وارد کنید: password=b"YOUR_PASSWORD"
     backend=default_backend()
