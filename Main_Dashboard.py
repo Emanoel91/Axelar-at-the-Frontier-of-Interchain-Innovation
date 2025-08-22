@@ -118,38 +118,22 @@ def load_txn_status_data(start_date, end_date, timeframe):
     return pd.read_sql(query, conn)
 
 # --- Transactions Over Time -----------------------------------
-txn_df = load_txn_status_data(start_date, end_date, timeframe)
+totals_by_date = txn_df.groupby("Date")["Number of Txns"].transform("sum")
 
-# Stacked bar chart
-fig1 = px.bar(
-    txn_df,
-    x="Date",
-    y="Number of Txns",
-    color="Status",
-    title="Successful & Failed Transactions Over Time",
-    barmode="stack"
-)
-
-# Normalized stacked bar chart
-normalized_df = (
-    txn_df.groupby(["Date", "Status"])["Number of Txns"]
-    .sum()
-    .groupby(level=0)
-    .apply(lambda x: x / x.sum())
-    .reset_index()
-)
+txn_df_pct = txn_df.copy()
+txn_df_pct["Share"] = (txn_df_pct["Number of Txns"] / totals_by_date).fillna(0)
 
 fig2 = px.bar(
-    normalized_df,
+    txn_df_pct,
     x="Date",
-    y="Number of Txns",
+    y="Share",
     color="Status",
     title="% of Successful & Failed Transactions Over Time",
-    barmode="stack"
+    barmode="stack"  
 )
 
 fig2.update_layout(
-    yaxis=dict(title="Percentage", tickformat=".0%")
+    yaxis=dict(title="Percentage", tickformat=".0%", range=[0, 1])
 )
 
 col1, col2 = st.columns(2)
