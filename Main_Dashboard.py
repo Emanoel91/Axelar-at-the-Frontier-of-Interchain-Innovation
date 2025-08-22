@@ -131,15 +131,26 @@ fig1 = px.bar(
 )
 
 # Normalized stacked bar chart
+normalized_df = (
+    txn_df.groupby(["Date", "Status"])["Number of Txns"]
+    .sum()
+    .groupby(level=0)
+    .apply(lambda x: x / x.sum())
+    .reset_index()
+)
+
 fig2 = px.bar(
-    txn_df,
+    normalized_df,
     x="Date",
     y="Number of Txns",
     color="Status",
     title="% of Successful & Failed Transactions Over Time",
-    barmode="relative"
+    barmode="stack"
 )
-fig2.update_layout(yaxis=dict(title="Percentage", tickformat=".0%"))
+
+fig2.update_layout(
+    yaxis=dict(title="Percentage", tickformat=".0%")
+)
 
 col1, col2 = st.columns(2)
 col1.plotly_chart(fig1, use_container_width=True)
