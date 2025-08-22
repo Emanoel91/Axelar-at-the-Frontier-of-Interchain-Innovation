@@ -78,6 +78,14 @@ start_date = st.date_input("Start Date", value=pd.to_datetime("2025-01-01"))
 end_date = st.date_input("End Date", value=pd.to_datetime("2025-07-31"))
 
 # --- Queries with Filters & Cached Functions -------------------------------------------------------------------------------------------------------------------
+st.markdown(
+    """
+    <div style="background-color:#0ed145; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Transactions and Users on Axelar</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 # --- Row 1 -----------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_kpi_data(start_date, end_date):
@@ -223,6 +231,14 @@ col1, col2 = st.columns(2)
 col1.plotly_chart(fig3, use_container_width=True)
 col2.plotly_chart(fig4, use_container_width=True)
 
+st.markdown(
+    """
+    <div style="background-color:#0ed145; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Squid Router Bridge</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 # --- Row 4 -------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_kpi_data(timeframe, start_date, end_date):
@@ -642,7 +658,14 @@ col2.plotly_chart(fig_txns, use_container_width=True)
 
 
 # --- Row 7: Satellite Bridge KPIs ------------------------------------------------------------------------------------------------
-
+st.markdown(
+    """
+    <div style="background-color:#0ed145; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Satellite Bridge</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 @st.cache_data
 def load_satellite_kpi(start_date, end_date):
     query = f"""
