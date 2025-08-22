@@ -504,7 +504,7 @@ with col3:
     st.plotly_chart(fig3, use_container_width=True)
 
 
-# --- Row 5: Source-Destination Overview ------------------------------------------------------------------------------------------------
+# --- Row 6: Source-Destination Overview ------------------------------------------------------------------------------------------------
 
 @st.cache_data
 def load_source_dest_data(start_date, end_date):
@@ -725,9 +725,9 @@ def load_satellite_over_time(start_date, end_date, timeframe):
 
 sat_time_df = load_satellite_over_time(start_date, end_date, timeframe)
 
-fig_vol = px.bar(sat_time_df, x="Date", y="Volume (USD)", title="Satellite Bridge Volume Over Time (USD)")
-fig_txn = px.bar(sat_time_df, x="Date", y="Transactions", title="Satellite Bridge Transactions Over Time")
-fig_users = px.bar(sat_time_df, x="Date", y="Users", title="Satellite Bridge Users Over Time")
+fig_vol = px.bar(sat_time_df, x="Date", y="Volume (USD)", labels={"Volume (USD)": "USD", "DATE": " "}, title="Satellite Bridge Volume Over Time (USD)")
+fig_txn = px.bar(sat_time_df, x="Date", y="Transactions", labels={"Transactions": "Txns", "DATE": " "}, title="Satellite Bridge Transactions Over Time")
+fig_users = px.bar(sat_time_df, x="Date", y="Users", labels={"Users": "Addresses", "DATE": " "}, title="Satellite Bridge Users Over Time")
 
 col1, col2, col3 = st.columns(3)
 col1.plotly_chart(fig_vol, use_container_width=True)
@@ -782,7 +782,7 @@ fig_bubble_vol = px.scatter(
     size="Volume (USD)",
     color="Source Chain",
     hover_data=["Volume (USD)", "Number of Transactions"],
-    title="Satellite Bridge Volume by Source → Destination"
+    title="Source Chain → Destination Chain: Volume (USD)"
 )
 
 fig_bubble_txn = px.scatter(
@@ -792,7 +792,7 @@ fig_bubble_txn = px.scatter(
     size="Number of Transactions",
     color="Source Chain",
     hover_data=["Volume (USD)", "Number of Transactions"],
-    title="Satellite Bridge Transactions by Source → Destination"
+    title="Source Chain → Destination Chain: Number of Transactions"
 )
 
 col1, col2 = st.columns(2)
