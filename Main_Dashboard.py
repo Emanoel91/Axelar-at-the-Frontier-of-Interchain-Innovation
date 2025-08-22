@@ -130,7 +130,7 @@ fig1 = px.bar(
     barmode="stack"
 )
 
-# --- Normalized stacked bar chart (100% per Date) ---
+# --- Normalized stacked bar chart (100% per Date) -------------------------------
 totals_by_date = txn_df.groupby("Date")["Number of Txns"].transform("sum")
 txn_df_pct = txn_df.copy()
 txn_df_pct["Share"] = (txn_df_pct["Number of Txns"] / totals_by_date).fillna(0)
