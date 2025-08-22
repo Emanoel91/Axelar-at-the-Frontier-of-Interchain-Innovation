@@ -622,7 +622,7 @@ fig_vol = px.scatter(
     size="Volume (USD)",
     color="Source Chain",
     hover_data=["Volume (USD)", "Number of Transactions"],
-    title="Source → Destination Volume (USD)"
+    title="Source Chain → Destination Chain: Volume (USD)"
 )
 
 # Bubble Chart 2: Number of Transactions
@@ -633,7 +633,7 @@ fig_txns = px.scatter(
     size="Number of Transactions",
     color="Source Chain",
     hover_data=["Volume (USD)", "Number of Transactions"],
-    title="Source → Destination Number of Transactions"
+    title="Source Chain → Destination Chain: Number of Transactions"
 )
 
 col1, col2 = st.columns(2)
