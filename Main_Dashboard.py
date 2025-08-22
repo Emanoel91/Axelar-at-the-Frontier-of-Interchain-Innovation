@@ -639,3 +639,162 @@ fig_txns = px.scatter(
 col1, col2 = st.columns(2)
 col1.plotly_chart(fig_vol, use_container_width=True)
 col2.plotly_chart(fig_txns, use_container_width=True)
+
+
+# --- Row 7: Satellite Bridge KPIs ------------------------------------------------------------------------------------------------
+
+@st.cache_data
+def load_satellite_kpi(start_date, end_date):
+    query = f"""
+        WITH overview AS (
+            WITH tab1 AS (
+                SELECT block_timestamp::date AS date, tx_hash, source_chain, destination_chain, sender, token_symbol
+                FROM AXELAR.DEFI.EZ_BRIDGE_SATELLITE
+                WHERE block_timestamp::date >= '{start_date}' AND block_timestamp::date <= '{end_date}'
+            ),
+            tab2 AS (
+                SELECT 
+                    created_at::date AS date, 
+                    LOWER(data:send:original_source_chain) AS source_chain, 
+                    LOWER(data:send:original_destination_chain) AS destination_chain,
+                    sender_address AS user, 
+                    CASE WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:amount::STRING) END AS amount,
+                    CASE WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL AND TRY_TO_DOUBLE(data:link:price::STRING) IS NOT NULL
+                         THEN TRY_TO_DOUBLE(data:send:amount::STRING) * TRY_TO_DOUBLE(data:link:price::STRING) END AS amount_usd,
+                    CASE WHEN TRY_TO_DOUBLE(data:send:fee_value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:fee_value::STRING) END AS fee,
+                    SPLIT_PART(id, '_', 1) AS tx_hash, data:link:asset::STRING AS raw_asset
+                FROM axelar.axelscan.fact_transfers
+                WHERE status = 'executed' AND simplified_status = 'received'
+                  AND created_at::date >= '{start_date}' AND created_at::date <= '{end_date}'
+            )
+            SELECT tab1.date, tab1.tx_hash, tab1.source_chain, tab1.destination_chain, sender, token_symbol, amount, amount_usd
+            FROM tab1 LEFT JOIN tab2 ON tab1.tx_hash=tab2.tx_hash
+        )
+        SELECT COUNT(DISTINCT tx_hash) AS "Transactions",
+               COUNT(DISTINCT sender) AS "Users",
+               ROUND(SUM(amount_usd)) AS "Volume (USD)"
+        FROM overview
+    """
+    return pd.read_sql(query, conn)
+
+sat_kpi_df = load_satellite_kpi(start_date, end_date)
+
+col1, col2, col3 = st.columns(3)
+col1.metric("Volume of Transfers", f"${sat_kpi_df['Volume (USD)'][0]:,}")
+col2.metric("Number of Transfers", f"{sat_kpi_df['Transactions'][0]:,} Txns")
+col3.metric("Number of Users", f"{sat_kpi_df['Users'][0]:,} Addresses")
+
+
+# --- Row 8: Satellite Bridge Over Time --------------------------------------------------------------------------------------------
+
+@st.cache_data
+def load_satellite_over_time(start_date, end_date, timeframe):
+    query = f"""
+        WITH overview AS (
+            WITH tab1 AS (
+                SELECT block_timestamp::date AS date, tx_hash, source_chain, destination_chain, sender, token_symbol
+                FROM AXELAR.DEFI.EZ_BRIDGE_SATELLITE
+                WHERE block_timestamp::date >= '{start_date}' AND block_timestamp::date <= '{end_date}'
+            ),
+            tab2 AS (
+                SELECT 
+                    created_at::date AS date, 
+                    LOWER(data:send:original_source_chain) AS source_chain, 
+                    LOWER(data:send:original_destination_chain) AS destination_chain,
+                    sender_address AS user, 
+                    CASE WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:amount::STRING) END AS amount,
+                    CASE WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL AND TRY_TO_DOUBLE(data:link:price::STRING) IS NOT NULL
+                         THEN TRY_TO_DOUBLE(data:send:amount::STRING) * TRY_TO_DOUBLE(data:link:price::STRING) END AS amount_usd,
+                    SPLIT_PART(id, '_', 1) AS tx_hash
+                FROM axelar.axelscan.fact_transfers
+                WHERE status = 'executed' AND simplified_status = 'received'
+                  AND created_at::date >= '{start_date}' AND created_at::date <= '{end_date}'
+            )
+            SELECT tab1.date, tab1.tx_hash, tab1.source_chain, tab1.destination_chain, sender, token_symbol, amount, amount_usd
+            FROM tab1 LEFT JOIN tab2 ON tab1.tx_hash=tab2.tx_hash
+        )
+        SELECT DATE_TRUNC('{timeframe}', date) AS "Date",
+               COUNT(DISTINCT tx_hash) AS "Transactions",
+               COUNT(DISTINCT sender) AS "Users",
+               ROUND(SUM(amount_usd)) AS "Volume (USD)"
+        FROM overview
+        GROUP BY 1
+        ORDER BY 1
+    """
+    return pd.read_sql(query, conn)
+
+sat_time_df = load_satellite_over_time(start_date, end_date, timeframe)
+
+fig_vol = px.bar(sat_time_df, x="Date", y="Volume (USD)", title="Satellite Bridge Volume Over Time (USD)")
+fig_txn = px.bar(sat_time_df, x="Date", y="Transactions", title="Satellite Bridge Transactions Over Time")
+fig_users = px.bar(sat_time_df, x="Date", y="Users", title="Satellite Bridge Users Over Time")
+
+col1, col2, col3 = st.columns(3)
+col1.plotly_chart(fig_vol, use_container_width=True)
+col2.plotly_chart(fig_txn, use_container_width=True)
+col3.plotly_chart(fig_users, use_container_width=True)
+
+
+# --- Row 9: Satellite Bridge Source → Destination ----------------------------------------------------------------------------------
+
+@st.cache_data
+def load_satellite_src_dest(start_date, end_date):
+    query = f"""
+        WITH overview AS (
+            WITH tab1 AS (
+                SELECT block_timestamp::date AS date, tx_hash, source_chain AS "Source Chain", destination_chain AS "Destination Chain", sender, token_symbol
+                FROM AXELAR.DEFI.EZ_BRIDGE_SATELLITE
+                WHERE block_timestamp::date >= '{start_date}' AND block_timestamp::date <= '{end_date}'
+            ),
+            tab2 AS (
+                SELECT 
+                    created_at::date AS date, 
+                    LOWER(data:send:original_source_chain) AS source_chain, 
+                    LOWER(data:send:original_destination_chain) AS destination_chain,
+                    sender_address AS user, 
+                    CASE WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:amount::STRING) END AS amount,
+                    CASE WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL AND TRY_TO_DOUBLE(data:link:price::STRING) IS NOT NULL
+                         THEN TRY_TO_DOUBLE(data:send:amount::STRING) * TRY_TO_DOUBLE(data:link:price::STRING) END AS amount_usd,
+                    SPLIT_PART(id, '_', 1) AS tx_hash
+                FROM axelar.axelscan.fact_transfers
+                WHERE status = 'executed' AND simplified_status = 'received'
+                  AND created_at::date >= '{start_date}' AND created_at::date <= '{end_date}'
+            )
+            SELECT tab1.date, tab1.tx_hash, tab1."Source Chain", tab1."Destination Chain", sender, token_symbol, amount, amount_usd
+            FROM tab1 LEFT JOIN tab2 ON tab1.tx_hash=tab2.tx_hash
+        )
+        SELECT "Source Chain", "Destination Chain",
+               COUNT(DISTINCT tx_hash) AS "Number of Transactions",
+               ROUND(SUM(amount_usd)) AS "Volume (USD)"
+        FROM overview
+        GROUP BY 1, 2
+        ORDER BY 3 DESC, 4
+    """
+    return pd.read_sql(query, conn)
+
+sat_src_dest_df = load_satellite_src_dest(start_date, end_date)
+
+fig_bubble_vol = px.scatter(
+    sat_src_dest_df,
+    x="Source Chain",
+    y="Destination Chain",
+    size="Volume (USD)",
+    color="Source Chain",
+    hover_data=["Volume (USD)", "Number of Transactions"],
+    title="Satellite Bridge Volume by Source → Destination"
+)
+
+fig_bubble_txn = px.scatter(
+    sat_src_dest_df,
+    x="Source Chain",
+    y="Destination Chain",
+    size="Number of Transactions",
+    color="Source Chain",
+    hover_data=["Volume (USD)", "Number of Transactions"],
+    title="Satellite Bridge Transactions by Source → Destination"
+)
+
+col1, col2 = st.columns(2)
+col1.plotly_chart(fig_bubble_vol, use_container_width=True)
+col2.plotly_chart(fig_bubble_txn, use_container_width=True)
+
