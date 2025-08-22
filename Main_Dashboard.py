@@ -767,6 +767,7 @@ def load_satellite_src_dest(start_date, end_date):
                COUNT(DISTINCT tx_hash) AS "Number of Transactions",
                ROUND(SUM(amount_usd)) AS "Volume (USD)"
         FROM overview
+        where amount_usd is not null
         GROUP BY 1, 2
         ORDER BY 3 DESC, 4
     """
