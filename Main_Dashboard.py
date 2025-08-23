@@ -660,7 +660,7 @@ col2.plotly_chart(fig_txns, use_container_width=True)
 # --- Row 7: Satellite Bridge KPIs ------------------------------------------------------------------------------------------------
 st.markdown(
     """
-    <div style="background-color:#0ed145; padding:1px; border-radius:20px;">
+    <div style="background-color:#0ed145; padding:20px; border-radius:20px;">
         <h2 style="color:#000000; text-align:center;">Satellite Bridge</h2>
     </div>
     """,
