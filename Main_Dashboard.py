@@ -666,6 +666,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+st.info("🛰All data related to the Satellite Bridge has been extracted considering five source chains: Ethereum, BSC, Polygon, Arbitrum, and Avalanche.")
 @st.cache_data
 def load_satellite_kpi(start_date, end_date):
     query = f"""
