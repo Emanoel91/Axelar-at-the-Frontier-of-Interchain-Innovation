@@ -660,13 +660,13 @@ col2.plotly_chart(fig_txns, use_container_width=True)
 # --- Row 7: Satellite Bridge KPIs ------------------------------------------------------------------------------------------------
 st.markdown(
     """
-    <div style="background-color:#0ed145; padding:1px; border-radius:10px;">
+    <div style="background-color:#0ed145; padding:1px; border-radius:20px;">
         <h2 style="color:#000000; text-align:center;">Satellite Bridge</h2>
     </div>
     """,
     unsafe_allow_html=True
 )
-st.info("🛰All data related to the Satellite Bridge has been extracted considering five source chains: Ethereum, BSC, Polygon, Arbitrum, and Avalanche.")
+st.info("🔔All data related to the Satellite Bridge has been extracted considering five source chains: Ethereum, BSC, Polygon, Arbitrum, and Avalanche.")
 @st.cache_data
 def load_satellite_kpi(start_date, end_date):
     query = f"""
