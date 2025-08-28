@@ -73,9 +73,16 @@ conn = snowflake.connector.connect(
 )
 
 # --- Time Frame & Period Selection ------------------------------------------------------------------------------------------------------------------------------
-timeframe = st.selectbox("Select Time Frame", ["week", "month", "day"])
-start_date = st.date_input("Start Date", value=pd.to_datetime("2025-01-01"))
-end_date = st.date_input("End Date", value=pd.to_datetime("2025-07-31"))
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    timeframe = st.selectbox("Select Time Frame", ["week", "month", "day"])
+
+with col2:
+    start_date = st.date_input("Start Date", value=pd.to_datetime("2025-01-01"))
+
+with col3:
+    end_date = st.date_input("End Date", value=pd.to_datetime("2025-08-31"))
 
 # --- Queries with Filters & Cached Functions -------------------------------------------------------------------------------------------------------------------
 st.markdown(
